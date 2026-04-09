@@ -7,6 +7,7 @@ DB_PATH = Path.home() / ".elio" / "history.db"
 
 
 def _conn():
+    DB_PATH.parent.mkdir(exist_ok=True, parents=True)
     return sqlite3.connect(DB_PATH)
 
 
