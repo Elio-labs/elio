@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "elio-cli"
-version = "0.2.5"
+version = "0.2.6"
 description = "Unified AI CLI — Claude, Gemini, ChatGPT in one terminal"
 requires-python = ">=3.11"
 dependencies = [
@@ -24,7 +24,7 @@ dependencies = [
 ]
 
 [project.scripts]
-elio = "elio.cli.main:app"
+elio = "cli.main:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["elio"]
+packages = ["cli", "auth", "config", "providers", "session", "files", "tui", "utils"]
