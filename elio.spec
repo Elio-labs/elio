@@ -1,7 +1,7 @@
 block_cipher = None
 
 a = Analysis(
-    ['elio/cli/main.py'],
+    ['cli/main.py'],
     pathex=['.'],
     binaries=[],
     datas=[],
