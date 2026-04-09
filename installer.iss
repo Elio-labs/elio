@@ -15,14 +15,9 @@ DisableProgramGroupPage=yes
 Source: "dist\elio.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
 
 [Registry]
-; Add to PATH on install
-Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; \
-  ValueData: "{app}\bin;{olddata}"; Check: NeedsAddPath(ExpandConstant('{app}\bin'))
+Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{app}\bin;{olddata}"; Check: NeedsAddPath(ExpandConstant('{app}\bin'))
 
 [Code]
-
-{ ── Install helpers ── }
-
 function NeedsAddPath(Param: string): boolean;
 var
   OrigPath: string;
@@ -35,22 +30,19 @@ begin
   Result := Pos(';' + UpperCase(Param) + ';', ';' + UpperCase(OrigPath) + ';') = 0;
 end;
 
-{ ── Uninstall: remove app\bin from PATH ── }
-
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
-  OrigPath, AppBin, NewPath: string;
+  OrigPath, AppBin: string;
 begin
   if CurUninstallStep = usPostUninstall then
   begin
     AppBin := ExpandConstant('{app}\bin');
     if RegQueryStringValue(HKCU, 'Environment', 'Path', OrigPath) then
     begin
-      { Strip all three possible forms: leading, trailing, or middle }
-      NewPath := StringReplace(OrigPath, AppBin + ';', '', [rfReplaceAll, rfIgnoreCase]);
-      NewPath := StringReplace(NewPath,  ';' + AppBin, '', [rfReplaceAll, rfIgnoreCase]);
-      NewPath := StringReplace(NewPath,  AppBin,       '', [rfReplaceAll, rfIgnoreCase]);
-      RegWriteExpandStrValue(HKCU, 'Environment', 'Path', NewPath);
+      StringChange(OrigPath, AppBin + ';', '');
+      StringChange(OrigPath, ';' + AppBin, '');
+      StringChange(OrigPath, AppBin, '');
+      RegWriteExpandStrValue(HKCU, 'Environment', 'Path', OrigPath);
     end;
   end;
 end;
