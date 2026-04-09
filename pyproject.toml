@@ -25,3 +25,6 @@ dependencies = [
 
 [project.scripts]
 elio = "elio.cli.main:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["elio"]
