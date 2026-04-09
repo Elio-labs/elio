@@ -34,8 +34,14 @@ def main(
     run_tui(alias=model)
 
 def setup_system_path():
+    import os
     if os.name != 'nt':
         return
+
+    import sys
+    import shutil
+    import winreg
+    from pathlib import Path
 
     home = Path.home()
     bin_dir = home / '.elio' / 'bin'
