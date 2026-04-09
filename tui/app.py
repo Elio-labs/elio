@@ -4,11 +4,11 @@ from textual.containers import Vertical
 from textual.binding import Binding
 from textual import work
 
-from elio.providers.registry import get_provider, resolve_model
-from elio.providers.base import Message
-from elio.config.loader import load_config
-from elio.cli.selector import ModelSelectorScreen
-from elio.session.manager import SessionManager
+from providers.registry import get_provider, resolve_model
+from providers.base import Message
+from config.loader import load_config
+from cli.selector import ModelSelectorScreen
+from session.manager import SessionManager
 
 from textual.screen import ModalScreen
 from textual.widgets import Input
@@ -115,7 +115,7 @@ class ElioApp(App):
             log.write(f"[bold red]Error:[/bold red] {e}\n")
 
     async def _handle_slash(self, cmd: str):
-        from elio.tui.commands_router import route_command
+        from tui.commands_router import route_command
         log = self.query_one("#chat-log", RichLog)
         result = await route_command(cmd, self)
         log.write(result.output + "\n")
@@ -139,7 +139,7 @@ class ElioApp(App):
             log.write(f"[yellow]→ Switched to {alias}[/yellow]\n")
 
     async def action_attach_file(self):
-        from elio.tui.commands_router import route_command
+        from tui.commands_router import route_command
         
         log = self.query_one("#chat-log", RichLog)
         path = await self.push_screen_wait(FilePathPromptScreen())

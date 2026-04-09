@@ -1,6 +1,6 @@
 import mimetypes
 from pathlib import Path
-from elio.providers.base import FileAttachment
+from providers.base import FileAttachment
 
 # File types Elio can handle
 SUPPORTED_EXTENSIONS = {

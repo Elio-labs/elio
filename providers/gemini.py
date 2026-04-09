@@ -2,8 +2,8 @@ import base64
 from typing import AsyncIterator
 import google.generativeai as genai
 
-from elio.providers.base import BaseProvider, Message, FileAttachment, ModelInfo
-from elio.auth.manager import get_api_key
+from providers.base import BaseProvider, Message, FileAttachment, ModelInfo
+from auth.manager import get_api_key
 
 
 class GeminiProvider(BaseProvider):

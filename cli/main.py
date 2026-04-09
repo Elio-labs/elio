@@ -4,12 +4,10 @@ All subcommands and the default `elio` (chat) command live here.
 """
 
 import typer
-import asyncio
 import sys
 from typing import Optional
 from rich.console import Console
 from rich.panel import Panel
-from rich import print as rprint
 
 app = typer.Typer(
     name="elio",
@@ -54,9 +52,8 @@ def main(
 
 def _check_credentials_before_chat():
     """Warn if no providers are configured, offer to run login."""
-    from auth.manager import AuthManager
-    mgr = AuthManager()
-    providers = mgr.get_configured_providers()
+    from auth.manager import get_connected_providers
+    providers = get_connected_providers()
     if not providers:
         console.print(Panel(
             "[yellow]No AI providers configured.[/yellow]\n\n"

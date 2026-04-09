@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from elio.tui.app import ElioApp
+    from tui.app import ElioApp
 
 
 @dataclass
@@ -45,7 +45,7 @@ async def route_command(cmd: str, app: "ElioApp") -> CommandResult:
         if not arg:
             return CommandResult(f"[yellow]Current model: {app.current_alias}[/yellow]")
         try:
-            from elio.providers.registry import resolve_model
+            from providers.registry import resolve_model
             entry = resolve_model(arg)
             app.current_alias = arg
             app.title = f"Elio — {arg}"
@@ -100,7 +100,7 @@ async def route_command(cmd: str, app: "ElioApp") -> CommandResult:
 
     # /status
     if name == "/status":
-        from elio.auth.manager import get_connected_providers
+        from auth.manager import get_connected_providers
         connected = get_connected_providers()
         return CommandResult("Connected: " + ", ".join(connected) if connected else "No providers connected.")
 
@@ -109,7 +109,7 @@ async def route_command(cmd: str, app: "ElioApp") -> CommandResult:
         if not arg:
             return CommandResult("[red]Usage: /attach /path/to/file[/red]", error=True)
         try:
-            from elio.files.handler import load_file
+            from files.handler import load_file
             attachment = load_file(arg)
             app.attached_files.append(attachment)
             return CommandResult(

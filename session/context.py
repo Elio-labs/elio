@@ -1,4 +1,4 @@
-from elio.providers.base import Message
+from providers.base import Message
 
 # Rough estimate: 1 token ≈ 4 characters
 CHARS_PER_TOKEN = 4

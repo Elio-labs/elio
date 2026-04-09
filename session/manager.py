@@ -1,10 +1,10 @@
 from pathlib import Path
 from datetime import datetime
 
-from elio.session.history import (
+from session.history import (
     init_db, create_session, append_message, load_session, list_sessions
 )
-from elio.providers.base import Message
+from providers.base import Message
 
 
 class SessionManager:

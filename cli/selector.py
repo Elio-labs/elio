@@ -4,7 +4,7 @@ from textual.widgets.option_list import Option
 from textual.app import ComposeResult
 from textual.containers import Vertical
 
-from elio.providers.registry import MODEL_REGISTRY
+from providers.registry import MODEL_REGISTRY
 
 
 class ModelSelectorScreen(ModalScreen[str]):

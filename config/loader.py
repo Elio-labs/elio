@@ -1,6 +1,6 @@
 from pathlib import Path
 import toml
-from elio.config.schema import ElioConfig
+from config.schema import ElioConfig
 
 # The ~/.elio/ directory holds everything: config, history db, logs
 ELIO_DIR = Path.home() / ".elio"
