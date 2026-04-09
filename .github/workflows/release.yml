@@ -1,0 +1,56 @@
+name: Build & Release Elio
+
+on:
+  push:
+    tags:
+      - 'v*'   # triggers on v0.1.0, v0.2.0, etc.
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]" pyinstaller
+
+      - name: Build binary with PyInstaller
+        run: pyinstaller elio/build/elio.spec
+
+      # ── Linux: wrap .exe in a .deb ──────────────────────
+      - name: Build .deb (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p pkg/usr/local/bin
+          cp dist/elio pkg/usr/local/bin/
+          fpm -s dir -t deb -n elio -v ${{ github.ref_name }} \
+              --prefix / -C pkg .
+        env:
+          DEBIAN_FRONTEND: noninteractive
+
+      # ── macOS: wrap in a .dmg ──────────────────────────
+      - name: Build .dmg (macOS only)
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p dmg-contents
+          cp dist/elio dmg-contents/
+          hdiutil create -volname Elio -srcfolder dmg-contents \
+              -ov -format UDZO Elio-macOS.dmg
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/elio*
+            *.deb
+            *.dmg
+            *.exe

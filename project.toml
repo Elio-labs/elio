@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "elio-cli"
+version = "0.1.0"
+description = "Unified AI CLI — Claude, Gemini, ChatGPT in one terminal"
+requires-python = ">=3.11"
+dependencies = [
+    "typer",
+    "rich",
+    "textual",
+    "anthropic",
+    "openai",
+    "google-generativeai",
+    "google-auth-oauthlib",
+    "keyring",
+    "python-dotenv",
+    "aiofiles",
+    "pydantic",
+    "toml",
+    "httpx",
+]
+
+[project.scripts]
+elio = "elio.cli.main:app"
