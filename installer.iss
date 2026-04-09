@@ -22,7 +22,7 @@ function NeedsAddPath(Param: string): boolean;
 var
   OrigPath: string;
 begin
-  if not RegQueryStringValue(HKCU, 'Environment', 'Path', OrigPath) then
+  if not RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', OrigPath) then
   begin
     Result := True;
     exit;
@@ -37,12 +37,12 @@ begin
   if CurUninstallStep = usPostUninstall then
   begin
     AppBin := ExpandConstant('{app}\bin');
-    if RegQueryStringValue(HKCU, 'Environment', 'Path', OrigPath) then
+    if RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', OrigPath) then
     begin
       StringChange(OrigPath, AppBin + ';', '');
       StringChange(OrigPath, ';' + AppBin, '');
       StringChange(OrigPath, AppBin, '');
-      RegWriteExpandStrValue(HKCU, 'Environment', 'Path', OrigPath);
+      RegWriteStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', OrigPath);
     end;
   end;
 end;
