@@ -20,7 +20,7 @@ app = typer.Typer(
 
 console = Console()
 
-VERSION = "0.2.5"
+VERSION = "0.1.0"
 
 
 def version_callback(value: bool):
