@@ -1,7 +1,7 @@
 [Setup]
 AppName=Elio
-AppVersion=0.2.3
-DefaultDirName={localappdata}\Elio
+AppVersion=0.2.4
+DefaultDirName={localappdata}\ElioCLI
 OutputDir=dist
 OutputBaseFilename=Elio-Setup
 Compression=lzma
@@ -13,7 +13,7 @@ DisableProgramGroupPage=yes
 Source: "dist\elio.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
 
 [Registry]
-Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Check: NeedsAddPath(ExpandConstant('{app}\bin'))
+Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{app}\bin;{olddata}"; Check: NeedsAddPath(ExpandConstant('{app}\bin'))
 
 [Code]
 function NeedsAddPath(Param: string): boolean;
