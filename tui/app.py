@@ -13,12 +13,14 @@ from session.manager import SessionManager
 from textual.screen import ModalScreen
 from textual.widgets import Input
 
+
 class FilePathPromptScreen(ModalScreen[str]):
     def compose(self) -> ComposeResult:
         yield Input(placeholder="Enter file path to attach and press Enter...")
 
     def on_input_submitted(self, event: Input.Submitted):
         self.dismiss(event.value)
+
 
 class ElioApp(App):
     CSS = """
@@ -55,20 +57,45 @@ class ElioApp(App):
         self.current_session_id = None
         self.session_manager = SessionManager()
         self.session_manager.start_new(self.current_alias)
+        self._model_selected = False  # Track if user has picked a model
 
     def compose(self) -> ComposeResult:
-        entry = resolve_model(self.current_alias)
         yield Header(show_clock=True)
         yield RichLog(id="chat-log", markup=True, highlight=True)
         yield Input(
-            placeholder=f"[{entry.model_string}] Message... (Ctrl+M to switch model)",
-            id="user-input"
+            placeholder="Select a model first... (loading)",
+            id="user-input",
         )
         yield Footer()
 
     def on_mount(self):
-        self.title = f"Elio — {self.current_alias}"
+        self.title = "Elio"
         log = self.query_one("#chat-log", RichLog)
+        log.write("[bold cyan]Elio[/bold cyan] — Welcome! Select a model to get started.\n")
+        # Auto-open the model selector on first launch
+        self._launch_model_selector()
+
+    @work(exclusive=True)
+    async def _launch_model_selector(self):
+        """Show model selector on startup. Runs in a worker so push_screen_wait works."""
+        alias = await self.push_screen_wait(ModelSelectorScreen())
+        if alias:
+            self._apply_model(alias)
+        else:
+            # User pressed Esc without choosing — fall back to default
+            self._apply_model(self.config.default_model)
+
+    def _apply_model(self, alias: str):
+        """Apply the selected model alias — update title, placeholder, session."""
+        self.current_alias = alias
+        self._model_selected = True
+        entry = resolve_model(alias)
+        self.title = f"Elio — {alias}"
+        self.session_manager.start_new(alias)
+        inp = self.query_one("#user-input", Input)
+        inp.placeholder = f"[{entry.model_string}] Message... (Ctrl+M to switch model)"
+        log = self.query_one("#chat-log", RichLog)
+        log.write(f"[bold cyan]Model:[/bold cyan] {entry.description} ([yellow]{entry.model_string}[/yellow])\n")
         log.write("[bold cyan]Elio[/bold cyan] — type a message and press Enter.\n")
 
     async def on_input_submitted(self, event: Input.Submitted):
@@ -81,13 +108,14 @@ class ElioApp(App):
             await self._handle_slash(text)
             return
 
-        await self._send_message(text)
+        # _send_message is @work-decorated → returns a Worker, don't await it
+        self._send_message(text)
 
     @work(exclusive=False)
     async def _send_message(self, text: str):
         log = self.query_one("#chat-log", RichLog)
         log.write(f"[bold green]You:[/bold green] {text}\n")
-        
+
         self.history.append(Message(role="user", content=text))
         self.session_manager.save_turn("user", text)
 
@@ -130,17 +158,31 @@ class ElioApp(App):
         self.query_one("#chat-log", RichLog).clear()
         self.session_manager.start_new(self.current_alias)
 
-    async def action_model_select(self):
+    def action_model_select(self):
+        """Open the model selector. Uses @work to run push_screen_wait in a worker."""
+        self._do_model_select()
+
+    @work(exclusive=True)
+    async def _do_model_select(self):
         alias = await self.push_screen_wait(ModelSelectorScreen())
         if alias:
             self.current_alias = alias
             self.title = f"Elio — {alias}"
+            entry = resolve_model(alias)
+            inp = self.query_one("#user-input", Input)
+            inp.placeholder = f"[{entry.model_string}] Message... (Ctrl+M to switch model)"
             log = self.query_one("#chat-log", RichLog)
-            log.write(f"[yellow]→ Switched to {alias}[/yellow]\n")
+            log.write(f"[yellow]→ Switched to {alias} ({entry.model_string})[/yellow]\n")
+            self.session_manager.start_new(alias)
 
-    async def action_attach_file(self):
+    def action_attach_file(self):
+        """Open file path prompt. Uses @work to run push_screen_wait in a worker."""
+        self._do_attach_file()
+
+    @work(exclusive=True)
+    async def _do_attach_file(self):
         from tui.commands_router import route_command
-        
+
         log = self.query_one("#chat-log", RichLog)
         path = await self.push_screen_wait(FilePathPromptScreen())
         if path:
