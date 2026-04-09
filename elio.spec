@@ -1,28 +1,30 @@
-# elio/build/elio.spec
-# Run with: pyinstaller elio/build/elio.spec
-
 block_cipher = None
 
 a = Analysis(
-    ['cli/main.py'],
-    pathex=[],
+    ['elio/cli/main.py'],
+    pathex=['.'],
     binaries=[],
     datas=[],
     hiddenimports=[
-        # Textual needs these at runtime
         'textual',
         'textual.widgets',
         'textual.app',
         'textual.screen',
-        # keyring backends
         'keyring.backends',
         'keyring.backends.macOS',
         'keyring.backends.Windows',
         'keyring.backends.SecretService',
-        # provider SDKs
         'anthropic',
         'openai',
         'google.generativeai',
+        'elio',
+        'elio.cli',
+        'elio.auth',
+        'elio.config',
+        'elio.providers',
+        'elio.session',
+        'elio.files',
+        'elio.tui'
     ],
     hookspath=[],
     hooksconfig={},
@@ -50,7 +52,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,   # CLI app — must be True
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
