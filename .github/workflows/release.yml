@@ -13,7 +13,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-      # This stops GitHub from cancelling everything if just one OS fails
       fail-fast: false 
 
     runs-on: ${{ matrix.os }}
@@ -26,11 +25,14 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        # Changed to install without the missing [dev] flag
         run: pip install . pyinstaller
 
       - name: Build binary with PyInstaller
         run: pyinstaller elio.spec
+
+      - name: Build Windows Setup Wizard
+        if: matrix.os == 'windows-latest'
+        run: iscc installer.iss
 
       - name: Install FPM for Linux
         if: runner.os == 'Linux'
@@ -48,18 +50,21 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
 
-      - name: Build .dmg (macOS only)
+      - name: Build .pkg Installer (macOS only)
         if: runner.os == 'macOS'
         run: |
-          mkdir -p dmg-contents
-          cp dist/elio dmg-contents/
-          hdiutil create -volname Elio -srcfolder dmg-contents -ov -format UDZO Elio-macOS.dmg
+          # Create the folder structure Macs expect
+          mkdir -p mac_pkg/usr/local/bin
+          cp dist/elio mac_pkg/usr/local/bin/
+          chmod +x mac_pkg/usr/local/bin/elio
+          
+          # Build the official Apple Installer package
+          pkgbuild --root mac_pkg --identifier com.elio.cli --version ${{ github.ref_name }} --install-location / Elio-macOS.pkg
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/elio*
+            dist/Elio-Setup.exe
+            Elio-macOS.pkg
             *.deb
-            *.dmg
-            *.exe
