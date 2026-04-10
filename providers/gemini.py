@@ -20,10 +20,10 @@ class GeminiProvider(BaseProvider):
 
     async def list_models(self) -> list[ModelInfo]:
         return [
-            ModelInfo("gemini-2.0-flash",     "gemini-2.0-flash",         "google", "Fast & free — default"),
-            ModelInfo("gemini-2.0-flash-lite", "gemini-2.0-flash-lite",   "google", "Ultra-fast, lightweight"),
-            ModelInfo("gemini-2.5-flash",      "gemini-2.5-flash-preview-05-20", "google", "Latest flash with thinking"),
-            ModelInfo("gemini-2.5-pro",        "gemini-2.5-pro-preview-05-06",   "google", "Best reasoning & research"),
+            ModelInfo("gemini-2.0-flash",      "gemini-2.0-flash",                    "google", "Fast & free — default"),
+            ModelInfo("gemini-2.0-flash-lite",  "gemini-2.0-flash-lite",              "google", "Ultra-fast, lightweight"),
+            ModelInfo("gemini-2.5-flash",       "gemini-2.5-flash-preview-05-20",     "google", "Latest flash with thinking"),
+            ModelInfo("gemini-2.5-pro",         "gemini-2.5-pro-preview-05-06",       "google", "Best reasoning & research"),
         ]
 
     async def stream_chat(
@@ -33,7 +33,7 @@ class GeminiProvider(BaseProvider):
         files: list[FileAttachment] | None = None,
     ) -> AsyncIterator[str]:
 
-        # Build conversation history for the new SDK
+        # Build conversation history
         history = []
         for msg in messages[:-1]:
             role = "user" if msg.role == "user" else "model"
@@ -41,7 +41,7 @@ class GeminiProvider(BaseProvider):
                 types.Content(role=role, parts=[types.Part(text=msg.content)])
             )
 
-        # Build the current user message parts
+        # Build current user message parts
         parts = []
         if files:
             for f in files:
@@ -57,13 +57,14 @@ class GeminiProvider(BaseProvider):
 
         parts.append(types.Part(text=messages[-1].content))
 
-        # Retry logic for free-tier rate limits
+        # Retry loop for free-tier rate limits
         for attempt in range(3):
             try:
-                async for chunk in await asyncio.to_thread(
-                    self._stream_sync, model, history, parts
-                ):
-                    yield chunk
+                # Use client.aio for native async — no thread wrapper needed
+                chat = await self.client.aio.chats.create(model=model, history=history)
+                async for chunk in await chat.send_message_stream(parts):
+                    if chunk.text:
+                        yield chunk.text
                 return
             except Exception as e:
                 err = str(e).lower()
@@ -73,11 +74,3 @@ class GeminiProvider(BaseProvider):
                     await asyncio.sleep(wait)
                 else:
                     raise
-
-    def _stream_sync(self, model: str, history: list, parts: list):
-        """Sync generator wrapped for asyncio.to_thread."""
-        chat = self.client.chats.create(model=model, history=history)
-        response = chat.send_message_stream(parts)
-        for chunk in response:
-            if chunk.text:
-                yield chunk.text
