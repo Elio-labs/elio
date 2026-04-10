@@ -13,7 +13,7 @@ dependencies = [
     "prompt-toolkit",
     "anthropic",
     "openai",
-    "google-generativeai",
+    "google-genai",
     "google-auth-oauthlib",
     "keyring",
     "python-dotenv",
