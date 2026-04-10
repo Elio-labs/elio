@@ -2,6 +2,12 @@ import os
 import sys
 import platform
 import subprocess
+
+# Fix Windows console encoding
+if sys.platform == "win32":
+    os.system("")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 import tempfile
 import httpx
 import typer
@@ -17,7 +23,7 @@ from auth.manager import (
 
 console = Console()
 
-CURRENT_VERSION = "0.1.0"
+CURRENT_VERSION = "0.2.0"
 GITHUB_API = "https://api.github.com/repos/Elio-labs/elio/releases/latest"
 
 
@@ -37,12 +43,12 @@ def run_login(provider: str | None = None):
 
     for p in providers_to_add:
         existing = get_api_key(p)
-        status = "[green]●[/green]" if existing else "[dim]○[/dim]"
+        status = "[green]+[/green]" if existing else "[dim]-[/dim]"
         console.print(f"\n{status} [bold]{p}[/bold]")
         key = Prompt.ask(f"  Enter your {p} API key (leave blank to skip)", default="")
         if key.strip():
             set_api_key(p, key.strip())
-            console.print(f"  [green]✓ {p} key saved.[/green]")
+            console.print(f"  [green]>> {p} key saved.[/green]")
         elif existing:
             console.print(f"  [dim]Kept existing key.[/dim]")
         else:
@@ -58,7 +64,7 @@ def run_login(provider: str | None = None):
 def run_logout():
     """Remove all stored API keys."""
     logout_all()
-    console.print("[green]✓ All credentials removed.[/green]")
+    console.print("[green]>> All credentials removed.[/green]")
 
 
 # ──────────────────────────────────────────────
@@ -67,16 +73,20 @@ def run_logout():
 
 def run_status():
     """Show which providers are configured."""
-    connected = get_connected_providers()
-    table = Table(title="Provider Status")
-    table.add_column("Provider", style="cyan")
-    table.add_column("Status")
+    from providers.registry import PROVIDERS as PROV_INFO, PROVIDER_ORDER
 
-    for p in PROVIDERS:
-        if p in connected:
-            table.add_row(p, "[green]● Connected[/green]")
-        else:
-            table.add_row(p, "[dim]○ Not configured[/dim]")
+    table = Table(title="Provider Status", border_style="#6c71c4")
+    table.add_column("Provider", style="cyan")
+    table.add_column("Brand", style="white")
+    table.add_column("Status")
+    table.add_column("Free Tier")
+
+    for key in PROVIDER_ORDER:
+        info = PROV_INFO[key]
+        has_key = get_api_key(key) is not None
+        status = "[green]+ Connected[/green]" if has_key else "[dim]- Not configured[/dim]"
+        free = "[green]Yes[/green]" if info.has_free else "[dim]No[/dim]"
+        table.add_row(info.name, info.brand, status, free)
 
     console.print(table)
 
@@ -86,19 +96,31 @@ def run_status():
 # ──────────────────────────────────────────────
 
 def run_models():
-    """List all available model aliases."""
-    from providers.registry import MODEL_REGISTRY
+    """List all available models across all providers."""
+    from providers.registry import (
+        MODEL_REGISTRY, PROVIDER_ORDER, PROVIDER_MODELS, PROVIDERS as PROV_INFO,
+    )
 
-    table = Table(title="Available Models")
-    table.add_column("Alias", style="cyan bold")
-    table.add_column("Model", style="white")
-    table.add_column("Provider", style="yellow")
-    table.add_column("Description", style="dim")
+    for provider_key in PROVIDER_ORDER:
+        info = PROV_INFO[provider_key]
+        aliases = PROVIDER_MODELS.get(provider_key, [])
 
-    for alias, entry in MODEL_REGISTRY.items():
-        table.add_row(alias, entry.model_string, entry.provider_name, entry.description)
+        table = Table(
+            title=f"{info.name} ({info.brand})",
+            border_style="#6c71c4",
+        )
+        table.add_column("Alias", style="cyan bold")
+        table.add_column("Model", style="white")
+        table.add_column("Tier", width=6)
+        table.add_column("Description", style="dim")
 
-    console.print(table)
+        for alias in aliases:
+            entry = MODEL_REGISTRY[alias]
+            tier = "[green]Free[/green]" if entry.is_free else "[yellow]Paid[/yellow]"
+            table.add_row(entry.alias, entry.model_string, tier, entry.description)
+
+        console.print(table)
+        console.print()
 
 
 # ──────────────────────────────────────────────
@@ -115,7 +137,7 @@ def run_history():
         console.print("[dim]No saved sessions yet.[/dim]")
         return
 
-    table = Table(title="Recent Sessions")
+    table = Table(title="Recent Sessions", border_style="#6c71c4")
     table.add_column("ID", style="cyan")
     table.add_column("Title", style="white")
     table.add_column("Model", style="yellow")
@@ -178,7 +200,7 @@ def run_update():
         return
 
     if _version_tuple(latest_tag) <= _version_tuple(CURRENT_VERSION):
-        console.print(f"[green]✓ You're already on the latest version[/green] (v{CURRENT_VERSION})")
+        console.print(f"[green]>> You're already on the latest version[/green] (v{CURRENT_VERSION})")
         return
 
     console.print(
@@ -269,4 +291,4 @@ def _run_installer(path: str, name: str):
         sys.exit(0)
     else:
         subprocess.Popen(["sudo", "dpkg", "-i", path])
-        sys.exit(0)
+        sys.exit(0)

@@ -11,7 +11,7 @@ class OpenAIProvider(BaseProvider):
     def __init__(self):
         key = get_api_key("openai")
         if not key:
-            raise RuntimeError("No OpenAI API key. Run `elio login`.")
+            raise RuntimeError("No OpenAI API key. Run `elio login openai`.")
         self.client = AsyncOpenAI(api_key=key)
 
     def validate_credentials(self) -> bool:
@@ -19,15 +19,17 @@ class OpenAIProvider(BaseProvider):
 
     async def list_models(self) -> list[ModelInfo]:
         return [
-            ModelInfo("gpt",     "gpt-4o", "openai", "Best for writing & creativity"),
-            ModelInfo("writing", "gpt-4o", "openai", "Alias for gpt"),
-            ModelInfo("vision",  "gpt-4o", "openai", "Multi-modal vision model"),
+            ModelInfo("gpt-4o-mini",  "gpt-4o-mini",  "openai", "Fast & very cheap — free credits"),
+            ModelInfo("gpt-4o",       "gpt-4o",       "openai", "Multi-modal, writing & creativity"),
+            ModelInfo("gpt-4.1",      "gpt-4.1",      "openai", "Latest & most capable"),
+            ModelInfo("gpt-4.1-mini", "gpt-4.1-mini", "openai", "Fast latest-gen"),
+            ModelInfo("gpt-4.1-nano", "gpt-4.1-nano", "openai", "Ultra-fast, cheapest"),
         ]
 
     async def stream_chat(
         self,
         messages: list[Message],
-        model: str = "gpt-4o",
+        model: str = "gpt-4o-mini",
         files: list[FileAttachment] | None = None,
     ) -> AsyncIterator[str]:
         api_messages = []

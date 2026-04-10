@@ -1,1 +1,1 @@
-# CLI package — the Typer app lives in cli.main
+# Elio CLI package

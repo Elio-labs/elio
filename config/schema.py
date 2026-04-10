@@ -3,8 +3,11 @@ from typing import Literal
 
 
 class ElioConfig(BaseModel):
+    # Default AI provider when elio launches
+    default_provider: str = "google"
+
     # Which model loads when you run `elio` with no arguments
-    default_model: str = "claude"
+    default_model: str = "gemini-2.0-flash"
 
     # Visual theme for the TUI
     theme: Literal["dark", "light", "high-contrast"] = "dark"

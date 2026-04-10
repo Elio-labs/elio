@@ -6,10 +6,10 @@ a = Analysis(
     binaries=[],
     datas=[],
     hiddenimports=[
-        'textual',
-        'textual.widgets',
-        'textual.app',
-        'textual.screen',
+        'prompt_toolkit',
+        'prompt_toolkit.history',
+        'prompt_toolkit.styles',
+        'prompt_toolkit.formatted_text',
         'keyring.backends',
         'keyring.backends.macOS',
         'keyring.backends.Windows',
@@ -24,7 +24,7 @@ a = Analysis(
         'elio.providers',
         'elio.session',
         'elio.files',
-        'elio.tui'
+        'elio.utils'
     ],
     hookspath=[],
     hooksconfig={},

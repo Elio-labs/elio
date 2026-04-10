@@ -11,7 +11,7 @@ class GeminiProvider(BaseProvider):
     def __init__(self):
         key = get_api_key("google")
         if not key:
-            raise RuntimeError("No Google API key. Run `elio login`.")
+            raise RuntimeError("No Google API key. Run `elio login google`.")
         genai.configure(api_key=key)
 
     def validate_credentials(self) -> bool:
@@ -19,14 +19,16 @@ class GeminiProvider(BaseProvider):
 
     async def list_models(self) -> list[ModelInfo]:
         return [
-            ModelInfo("gemini",   "gemini-2.5-pro", "google", "Research & web-grounded summaries"),
-            ModelInfo("research", "gemini-2.5-pro", "google", "Alias for gemini"),
+            ModelInfo("gemini-2.0-flash",      "gemini-2.0-flash",                  "google", "Fast & free — default"),
+            ModelInfo("gemini-2.0-flash-lite",  "gemini-2.0-flash-lite",             "google", "Ultra-fast, lightweight"),
+            ModelInfo("gemini-2.5-flash",       "gemini-2.5-flash-preview-04-17",    "google", "Latest flash with thinking"),
+            ModelInfo("gemini-2.5-pro",         "gemini-2.5-pro-preview-05-06",      "google", "Best reasoning & research"),
         ]
 
     async def stream_chat(
         self,
         messages: list[Message],
-        model: str = "gemini-2.5-pro",
+        model: str = "gemini-2.0-flash",
         files: list[FileAttachment] | None = None,
     ) -> AsyncIterator[str]:
         # Convert history to Gemini's format

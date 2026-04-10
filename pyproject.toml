@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "elio-cli"
-version = "0.1.0"
-description = "Unified AI CLI — Claude, Gemini, ChatGPT in one terminal"
+version = "0.2.0"
+description = "Unified AI Coding Agent — Claude, Gemini, ChatGPT in one terminal"
 requires-python = ">=3.11"
 dependencies = [
     "typer",
     "rich",
-    "textual",
+    "prompt-toolkit",
     "anthropic",
     "openai",
     "google-generativeai",
@@ -27,4 +27,4 @@ dependencies = [
 elio = "cli.main:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["cli", "auth", "config", "providers", "session", "files", "tui", "utils"]
+packages = ["cli", "auth", "config", "providers", "session", "files", "utils"]

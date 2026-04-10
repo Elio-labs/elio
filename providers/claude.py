@@ -12,7 +12,7 @@ class ClaudeProvider(BaseProvider):
         key = get_api_key("anthropic")
         if not key:
             raise RuntimeError(
-                "No Anthropic API key found. Run `elio login` first."
+                "No Anthropic API key found. Run `elio login anthropic`."
             )
         # Async client — all calls are awaited inside stream_chat
         self.client = anthropic.AsyncAnthropic(api_key=key)
@@ -22,9 +22,8 @@ class ClaudeProvider(BaseProvider):
 
     async def list_models(self) -> list[ModelInfo]:
         return [
-            ModelInfo("claude",   "claude-sonnet-4-5", "anthropic", "Best for coding & reasoning"),
-            ModelInfo("fast",     "claude-haiku-4-5",  "anthropic", "Fastest & cheapest Claude"),
-            ModelInfo("coding",   "claude-sonnet-4-5", "anthropic", "Alias for claude"),
+            ModelInfo("claude-sonnet", "claude-sonnet-4-5", "anthropic", "Best for coding & reasoning"),
+            ModelInfo("claude-haiku",  "claude-haiku-4-5",  "anthropic", "Fast & affordable"),
         ]
 
     async def stream_chat(

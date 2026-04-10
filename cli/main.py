@@ -11,19 +11,19 @@ from rich.panel import Panel
 
 app = typer.Typer(
     name="elio",
-    help="Unified AI CLI — Claude, Gemini, and ChatGPT in one terminal.",
+    help="Unified AI Coding Agent — Claude, Gemini, and ChatGPT in one terminal.",
     add_completion=False,
     no_args_is_help=False,
 )
 
 console = Console()
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 
 def version_callback(value: bool):
     if value:
-        console.print(f"[bold cyan]Elio[/bold cyan] version [bold]{VERSION}[/bold]")
+        console.print(f"[bold #6c71c4]Elio[/bold #6c71c4] version [bold]{VERSION}[/bold]")
         raise typer.Exit()
 
 
@@ -38,30 +38,25 @@ def main(
         is_eager=True,
         help="Show version and exit.",
     ),
+    provider: Optional[str] = typer.Option(
+        None,
+        "--provider",
+        "-p",
+        help="Set AI provider (google, anthropic, openai).",
+    ),
+    model: Optional[str] = typer.Option(
+        None,
+        "--model",
+        "-m",
+        help="Set model alias (e.g. gemini-2.0-flash, claude-sonnet, gpt-4o).",
+    ),
 ):
     """
-    Elio — Unified AI CLI. Run without a subcommand to open the chat interface.
+    Elio — Unified AI Coding Agent. Run without a subcommand to open the chat.
     """
     if ctx.invoked_subcommand is None:
-        # No subcommand → launch TUI chat
-        _check_credentials_before_chat()
-        from tui.app import ElioApp
-        app_instance = ElioApp()
-        app_instance.run()
-
-
-def _check_credentials_before_chat():
-    """Warn if no providers are configured, offer to run login."""
-    from auth.manager import get_connected_providers
-    providers = get_connected_providers()
-    if not providers:
-        console.print(Panel(
-            "[yellow]No AI providers configured.[/yellow]\n\n"
-            "Run [bold cyan]elio login[/bold cyan] to add your API keys.",
-            title="[bold red]Setup Required[/bold red]",
-            border_style="red",
-        ))
-        raise typer.Exit(1)
+        from cli.chat import run_chat
+        run_chat(provider_override=provider, model_override=model)
 
 
 # ──────────────────────────────────────────────
@@ -93,7 +88,7 @@ def status():
 
 @app.command()
 def models():
-    """List all available models."""
+    """List all available models across all providers."""
     from cli.commands import run_models
     run_models()
 
