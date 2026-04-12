@@ -1,15 +1,13 @@
 """
 Elio CLI — Inline chat interface.
 
-This is the core of Elio: a Rich + prompt_toolkit inline terminal chat loop
-that lives directly in the user's terminal (no separate window).
-Inspired by Claude Code / Aider.
+Rich + prompt_toolkit inline terminal chat with a "Select your AI"
+selector on every launch. No hardcoded default model.
 """
 
 import asyncio
 import os
 import sys
-import signal
 from typing import Optional
 
 # Fix Windows console encoding — must run before any Rich output
@@ -23,9 +21,10 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 from rich.markdown import Markdown
-from rich.prompt import Prompt, IntPrompt
 from rich.rule import Rule
 from rich.live import Live
+from rich.columns import Columns
+from rich.align import Align
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.styles import Style as PTStyle
@@ -45,7 +44,7 @@ from utils.error import friendly_error
 
 console = Console()
 
-VERSION = "0.2.0"
+VERSION = "0.2.5"
 
 # ── Prompt toolkit styling ──────────────────────────────────────────────────
 
@@ -54,53 +53,171 @@ PT_STYLE = PTStyle.from_dict({
     "": "#93a1a1",
 })
 
-# ── Branding ────────────────────────────────────────────────────────────────
+# ── ASCII Logo ───────────────────────────────────────────────────────────────
 
-LOGO = """[bold #6c71c4]
-  ████████ ██       ██  ██████
+LOGO = """\
+[bold #6c71c4]  ████████ ██       ██  ██████
   ██       ██       ██ ██    ██
   ██████   ██       ██ ██    ██
   ██       ██       ██ ██    ██
   ████████ ████████ ██  ██████[/bold #6c71c4]"""
 
 
-def _tier_badge(is_free: bool) -> str:
-    return "[bold green]FREE[/bold green]" if is_free else "[bold yellow]PAID[/bold yellow]"
+# ── Startup Banner ──────────────────────────────────────────────────────────
+
+def print_welcome_banner():
+    """Print the Elio welcome banner (before model selection)."""
+    console.print()
+    console.print(Panel(
+        f"{LOGO}\n\n"
+        f"[dim]  Unified AI in your terminal · v{VERSION}[/dim]\n"
+        f"  [dim]Claude · Gemini · ChatGPT — one command[/dim]",
+        border_style="#6c71c4",
+        padding=(0, 2),
+    ))
+    console.print()
 
 
-def _provider_badge(provider_key: str) -> str:
+def print_chat_banner(provider_key: str, model_alias: str):
+    """Print banner after model is selected, shown above the chat."""
+    entry = resolve_model(model_alias)
     info = PROVIDERS[provider_key]
-    if info.has_free:
-        return f"[green]*[/green] {info.name} ({info.brand})"
-    return f"[yellow]*[/yellow] {info.name} ({info.brand})"
+    tier = "[green]free[/green]" if entry.is_free else "[yellow]paid[/yellow]"
+    console.print(Panel(
+        f"[bold #6c71c4]{info.name}[/bold #6c71c4] · [bold]{entry.display_name}[/bold] · {tier}\n"
+        f"[dim]  /help for commands  ·  /provider to switch AI  ·  /exit to quit[/dim]",
+        border_style="#6c71c4",
+        padding=(0, 1),
+    ))
+    console.print()
 
 
-# ── Provider & Model Selection ──────────────────────────────────────────────
+# ── Provider / Model Selection ──────────────────────────────────────────────
+
+def select_ai() -> tuple[str, str] | None:
+    """
+    Show the 'Select your AI' screen.
+    Returns (provider_key, model_alias) or None if cancelled.
+    """
+    console.print(Rule("[bold #6c71c4]  🤖  SELECT YOUR AI  [/bold #6c71c4]", style="#6c71c4"))
+    console.print()
+
+    # Build provider table
+    table = Table(box=None, padding=(0, 2), show_header=False)
+    table.add_column("Num",    style="bold #6c71c4", width=4, no_wrap=True)
+    table.add_column("Name",   style="bold white",   width=14, no_wrap=True)
+    table.add_column("Brand",  style="cyan",          width=10, no_wrap=True)
+    table.add_column("Free",   width=8,  no_wrap=True)
+    table.add_column("Best for", style="dim",         width=28, no_wrap=True)
+
+    best_for = {
+        "google":    "Research, summarization, coding",
+        "anthropic": "Coding, debugging, reasoning",
+        "openai":    "Writing, creativity, chat",
+    }
+
+    for i, key in enumerate(PROVIDER_ORDER, 1):
+        info = PROVIDERS[key]
+        free_tag = "[green]✓ Free[/green]" if info.has_free else "[dim]API key[/dim]"
+        # Show connected status
+        has_key = get_api_key(key) is not None
+        connected = "[dim green] ●[/dim green]" if has_key else "[dim red] ○[/dim red]"
+        table.add_row(
+            f"{i}.",
+            f"{info.name}{connected}",
+            info.brand,
+            free_tag,
+            best_for.get(key, ""),
+        )
+
+    console.print(table)
+    console.print()
+    console.print("[dim]  ● = API key configured   ○ = not configured[/dim]")
+    console.print()
+
+    # Get provider choice
+    try:
+        raw = input("  Enter 1–3 to select provider: ").strip()
+    except (KeyboardInterrupt, EOFError):
+        console.print("\n[dim]Cancelled.[/dim]")
+        return None
+
+    if not raw.isdigit() or not (1 <= int(raw) <= len(PROVIDER_ORDER)):
+        console.print("[red]  Invalid choice.[/red]")
+        return None
+
+    provider_key = PROVIDER_ORDER[int(raw) - 1]
+    info = PROVIDERS[provider_key]
+
+    # Check if API key is configured
+    if not get_api_key(provider_key):
+        console.print()
+        console.print(f"  [yellow]! No API key for {info.name}.[/yellow]")
+        console.print(f"  [dim]Run [bold cyan]elio login[/bold cyan] to add your key, or choose a different provider.[/dim]")
+        console.print()
+        try:
+            add_now = input("  Add API key now? [y/N]: ").strip().lower()
+        except (KeyboardInterrupt, EOFError):
+            return None
+        if add_now == "y":
+            from auth.manager import set_api_key
+            try:
+                import getpass
+                key_val = getpass.getpass(f"  Paste your {info.name} API key: ").strip()
+            except (KeyboardInterrupt, EOFError):
+                return None
+            if key_val:
+                set_api_key(provider_key, key_val)
+                console.print(f"  [green]✓ {info.name} key saved.[/green]")
+            else:
+                console.print("  [dim]Skipped — no key entered.[/dim]")
+                return None
+        else:
+            return None
+
+    # Now select a model
+    console.print()
+    alias = select_model(provider_key, current_alias=None)
+    if not alias:
+        return None
+
+    return provider_key, alias
+
 
 def select_provider(current_provider: str | None = None) -> str | None:
     """Interactive provider selector. Returns provider key or None if cancelled."""
     console.print()
-    console.print("[bold]Select AI Provider:[/bold]")
+    console.print(Rule("[bold #6c71c4]  Switch AI Provider  [/bold #6c71c4]", style="#6c71c4"))
     console.print()
 
     for i, key in enumerate(PROVIDER_ORDER, 1):
         info = PROVIDERS[key]
-        free_tag = "  [dim green]· free tier available[/dim green]" if info.has_free else "  [dim]· API key required[/dim]"
-        marker = " [cyan]<[/cyan]" if key == current_provider else ""
-        console.print(f"    [bold]{i}.[/bold] {_provider_badge(key)}{free_tag}{marker}")
+        has_key = get_api_key(key) is not None
+        free_tag = "  [dim green]· free tier[/dim green]" if info.has_free else "  [dim]· API key required[/dim]"
+        connected = "[green] ●[/green]" if has_key else "[red] ○[/red]"
+        marker = "  [cyan]◀ current[/cyan]" if key == current_provider else ""
+        console.print(f"    [bold #6c71c4]{i}.[/bold #6c71c4]  {info.name}{connected} ({info.brand}){free_tag}{marker}")
 
     console.print()
     try:
-        choice = IntPrompt.ask(
-            "  Choice",
-            default=PROVIDER_ORDER.index(current_provider) + 1 if current_provider in PROVIDER_ORDER else 1,
-        )
-        if 1 <= choice <= len(PROVIDER_ORDER):
-            return PROVIDER_ORDER[choice - 1]
-        console.print("[red]  Invalid choice.[/red]")
-        return None
+        raw = input("  Choice [1-3]: ").strip()
     except (KeyboardInterrupt, EOFError):
         return None
+
+    if not raw.isdigit() or not (1 <= int(raw) <= len(PROVIDER_ORDER)):
+        console.print("[red]  Invalid choice.[/red]")
+        return None
+
+    chosen = PROVIDER_ORDER[int(raw) - 1]
+
+    # Check key
+    if not get_api_key(chosen):
+        info = PROVIDERS[chosen]
+        console.print(f"\n  [yellow]! No API key for {info.name}.[/yellow]")
+        console.print(f"  Run [bold cyan]elio login {chosen}[/bold cyan] first.\n")
+        return None
+
+    return chosen
 
 
 def select_model(provider_key: str, current_alias: str | None = None) -> str | None:
@@ -109,21 +226,17 @@ def select_model(provider_key: str, current_alias: str | None = None) -> str | N
     info = PROVIDERS[provider_key]
 
     console.print()
-    console.print(f"[bold]Select Model ({info.name}):[/bold]")
+    console.print(f"  [bold]Select model — {info.name} ({info.brand}):[/bold]")
     console.print()
-
-    # Table header
-    console.print(f"    [dim]{'#':>3}  {'Model':<24} {'Tier':<8} Description[/dim]")
-    console.print(f"    [dim]{'─'*3}  {'─'*24} {'─'*8} {'─'*30}[/dim]")
 
     for i, m in enumerate(models, 1):
-        tier = "[green]Free[/green] " if m.is_free else "[yellow]Paid[/yellow] "
-        marker = " [cyan]<[/cyan]" if m.alias == current_alias else ""
-        console.print(f"    [bold]{i:>3}.[/bold] {m.display_name:<24} {tier}  {m.description}{marker}")
+        tier = "[green]Free [/green]" if m.is_free else "[yellow]Paid [/yellow]"
+        marker = "  [cyan]◀[/cyan]" if m.alias == current_alias else ""
+        console.print(f"    [bold #6c71c4]{i:>2}.[/bold #6c71c4]  {m.display_name:<28} {tier}  [dim]{m.description}[/dim]{marker}")
 
     console.print()
 
-    # Determine default: current model if in this provider, else 1
+    # Default = current model or first
     default_idx = 1
     for i, m in enumerate(models, 1):
         if m.alias == current_alias:
@@ -131,26 +244,26 @@ def select_model(provider_key: str, current_alias: str | None = None) -> str | N
             break
 
     try:
-        choice = IntPrompt.ask("  Choice", default=default_idx)
-        if 1 <= choice <= len(models):
-            selected = models[choice - 1]
-            # Check if user has the API key for paid models
-            key = get_api_key(provider_key)
-            if not key:
-                console.print(
-                    f"\n  [yellow]! No API key for {info.name}.[/yellow] "
-                    f"Run [bold cyan]elio login {provider_key}[/bold cyan] first.\n"
-                )
-                return None
-            return selected.alias
-        console.print("[red]  Invalid choice.[/red]")
-        return None
+        raw = input(f"  Choice [1-{len(models)}] (default {default_idx}): ").strip()
     except (KeyboardInterrupt, EOFError):
         return None
 
+    if not raw:
+        raw = str(default_idx)
 
-def full_provider_model_select(current_provider: str | None = None, current_alias: str | None = None) -> tuple[str, str] | None:
-    """Full two-level selection: provider → model. Returns (provider, alias) or None."""
+    if not raw.isdigit() or not (1 <= int(raw) <= len(models)):
+        console.print("[red]  Invalid choice.[/red]")
+        return None
+
+    selected = models[int(raw) - 1]
+    return selected.alias
+
+
+def full_provider_model_select(
+    current_provider: str | None = None,
+    current_alias: str | None = None,
+) -> tuple[str, str] | None:
+    """Two-level selection: provider → model. Returns (provider, alias) or None."""
     provider = select_provider(current_provider)
     if not provider:
         return None
@@ -162,42 +275,18 @@ def full_provider_model_select(current_provider: str | None = None, current_alia
     return provider, alias
 
 
-# ── Startup Banner ──────────────────────────────────────────────────────────
-
-def print_banner(provider_key: str, model_alias: str):
-    """Print the gorgeous startup banner."""
-    entry = resolve_model(model_alias)
-    info = PROVIDERS[provider_key]
-    tier = "free" if entry.is_free else "paid"
-
-    banner_content = (
-        f"{LOGO}\n"
-        f"[dim]   Unified AI Coding Agent · v{VERSION}[/dim]\n"
-        f"   Provider: [bold]{info.name}[/bold] · {entry.display_name} [dim]({tier})[/dim]\n"
-        f"\n"
-        f"   [dim]/help for commands · /provider to switch AI[/dim]"
-    )
-
-    console.print(Panel(
-        banner_content,
-        border_style="#6c71c4",
-        padding=(0, 1),
-    ))
-    console.print()
-
-
 # ── Build prompt text ───────────────────────────────────────────────────────
 
 def make_prompt_text(provider_key: str, model_alias: str) -> HTML:
     """Build the prompt_toolkit prompt showing current provider/model."""
     entry = resolve_model(model_alias)
     return HTML(
-        f'<style fg="#6c71c4">[{provider_key} > {entry.display_name}]</style> '
-        f'<style fg="#6c71c4"><b>elio ></b></style> '
+        f'<style fg="#6c71c4">[{entry.display_name}]</style> '
+        f'<style fg="#6c71c4"><b>❯</b></style> '
     )
 
 
-# ── Main Chat Loop ─────────────────────────────────────────────────────────
+# ── Main Chat Entry Point ───────────────────────────────────────────────────
 
 def run_chat(
     provider_override: str | None = None,
@@ -205,32 +294,35 @@ def run_chat(
 ):
     """
     Main entry point for the Elio inline chat.
-    Called by `elio` (no subcommand) or `elio chat`.
+    Called by `elio` (no subcommand).
+
+    Always shows the "Select your AI" selector — no hardcoded defaults.
     """
     config = load_config()
 
-    # Determine initial provider and model
-    current_provider = provider_override or config.default_provider
-    current_alias = model_override or config.default_model
+    # Show welcome banner first
+    print_welcome_banner()
 
-    # Validate the provider/model combo
-    if current_provider not in PROVIDERS:
-        current_provider = "google"
-    if current_alias not in MODEL_REGISTRY:
-        current_alias = get_default_model_for_provider(current_provider).alias
+    # If provider/model passed on CLI, use those directly
+    if provider_override and model_override:
+        current_provider = provider_override
+        current_alias = model_override
+    else:
+        # Always show the selector — this is the core UX
+        result = select_ai()
+        if not result:
+            console.print("\n[dim]No model selected. Exiting.[/dim]\n")
+            return
+        current_provider, current_alias = result
 
-    # Make sure the model belongs to the selected provider
-    entry = resolve_model(current_alias)
-    if entry.provider_name != current_provider:
-        current_alias = get_default_model_for_provider(current_provider).alias
-
-    # Print the banner
-    print_banner(current_provider, current_alias)
+    # Clear screen and show chat banner
+    os.system("cls" if os.name == "nt" else "clear")
+    print_chat_banner(current_provider, current_alias)
 
     # Setup prompt_toolkit session with persistent history
     history_path = Path.home() / ".elio" / "prompt_history"
     history_path.parent.mkdir(parents=True, exist_ok=True)
-    session = PromptSession(
+    pt_session = PromptSession(
         history=FileHistory(str(history_path)),
         style=PT_STYLE,
         multiline=False,
@@ -248,7 +340,7 @@ def run_chat(
     # Run the async event loop
     try:
         asyncio.run(_chat_loop(
-            session=session,
+            session=pt_session,
             session_manager=session_manager,
             history=history,
             attached_files=attached_files,
@@ -301,16 +393,16 @@ async def _chat_loop(
                     config=config,
                 )
 
-                # Print output
                 if result.output:
                     console.print(result.output)
 
-                # Handle state changes from commands
                 if result.new_provider:
                     current_provider = result.new_provider
                 if result.new_alias:
                     current_alias = result.new_alias
                     session_manager.start_new(current_alias)
+                    # Show updated banner
+                    print_chat_banner(current_provider, current_alias)
                 if result.clear_history:
                     history.clear()
                     attached_files.clear()
@@ -331,11 +423,9 @@ async def _chat_loop(
             )
 
         except KeyboardInterrupt:
-            # Ctrl+C during input — just show a new prompt
             console.print()
             continue
         except EOFError:
-            # Ctrl+D — exit
             console.print("\n[dim]Goodbye! 👋[/dim]")
             return
 
@@ -358,13 +448,13 @@ async def _send_message(
     history.append(Message(role="user", content=text))
     session_manager.save_turn("user", text)
 
-    # Show AI header
-    console.print(f"\n[bold #6c71c4]{entry.display_name}:[/bold #6c71c4]")
+    # Show AI label
+    console.print(f"\n[bold #6c71c4]{entry.display_name}:[/bold #6c71c4] ", end="")
 
     try:
         provider = get_provider(current_alias)
-
         full_response = ""
+
         # Stream tokens directly to console
         async for token in provider.stream_chat(
             messages=history,
@@ -374,7 +464,6 @@ async def _send_message(
             console.print(token, end="", highlight=False)
             full_response += token
 
-        # End the response block
         console.print("\n")
 
         # Save assistant response

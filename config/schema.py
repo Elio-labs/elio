@@ -1,13 +1,13 @@
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, Optional
 
 
 class ElioConfig(BaseModel):
-    # Default AI provider when elio launches
-    default_provider: str = "google"
+    # No hardcoded default — forces the "Select your AI" selector on launch
+    default_provider: Optional[str] = None
 
-    # Which model loads when you run `elio` with no arguments
-    default_model: str = "gemini-2.0-flash"
+    # No hardcoded default model
+    default_model: Optional[str] = None
 
     # Visual theme for the TUI
     theme: Literal["dark", "light", "high-contrast"] = "dark"

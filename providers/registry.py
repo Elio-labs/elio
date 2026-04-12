@@ -85,16 +85,16 @@ MODEL_REGISTRY: dict[str, ModelEntry] = {
     # ─── Anthropic (Claude) ──────────────────────────────────────────────
     "claude-sonnet": ModelEntry(
         alias="claude-sonnet",
-        display_name="Claude Sonnet 4",
-        model_string="claude-sonnet-4-5",
+        display_name="Claude Sonnet 4.6",
+        model_string="claude-sonnet-4-6",
         provider_name="anthropic",
         description="Best for coding & reasoning",
-        is_free=True,
+        is_free=False,
     ),
     "claude-haiku": ModelEntry(
         alias="claude-haiku",
-        display_name="Claude Haiku 4",
-        model_string="claude-haiku-4-5",
+        display_name="Claude Haiku 4.5",
+        model_string="claude-haiku-4-5-20251001",
         provider_name="anthropic",
         description="Fast & affordable",
         is_free=False,

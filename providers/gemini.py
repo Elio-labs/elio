@@ -20,10 +20,10 @@ class GeminiProvider(BaseProvider):
 
     async def list_models(self) -> list[ModelInfo]:
         return [
-            ModelInfo("gemini-2.0-flash",      "gemini-2.0-flash",                    "google", "Fast & free — default"),
-            ModelInfo("gemini-2.0-flash-lite",  "gemini-2.0-flash-lite",              "google", "Ultra-fast, lightweight"),
-            ModelInfo("gemini-2.5-flash",       "gemini-2.5-flash-preview-05-20",     "google", "Latest flash with thinking"),
-            ModelInfo("gemini-2.5-pro",         "gemini-2.5-pro-preview-05-06",       "google", "Best reasoning & research"),
+            ModelInfo("gemini-2.0-flash",     "gemini-2.0-flash",              "google", "Fast & free — default"),
+            ModelInfo("gemini-2.0-flash-lite", "gemini-2.0-flash-lite",        "google", "Ultra-fast, lightweight"),
+            ModelInfo("gemini-2.5-flash",      "gemini-2.5-flash-preview-04-17","google","Latest flash with thinking"),
+            ModelInfo("gemini-2.5-pro",        "gemini-2.5-pro-preview-05-06", "google", "Best reasoning & research"),
         ]
 
     async def stream_chat(
@@ -32,37 +32,39 @@ class GeminiProvider(BaseProvider):
         model: str = "gemini-2.0-flash",
         files: list[FileAttachment] | None = None,
     ) -> AsyncIterator[str]:
+        # Build the full contents list (history + current message)
+        contents = []
 
-        # Build conversation history
-        history = []
+        # Add conversation history (all but last message)
         for msg in messages[:-1]:
             role = "user" if msg.role == "user" else "model"
-            history.append(
+            contents.append(
                 types.Content(role=role, parts=[types.Part(text=msg.content)])
             )
 
-        # Build current user message parts
+        # Build parts for the current (last) user message
         parts = []
         if files:
             for f in files:
                 if f.mime_type.startswith("image/"):
                     parts.append(
-                        types.Part(
-                            inline_data=types.Blob(mime_type=f.mime_type, data=f.data)
-                        )
+                        types.Part(inline_data=types.Blob(mime_type=f.mime_type, data=f.data))
                     )
                 else:
                     text_content = f.data.decode("utf-8", errors="replace")
                     parts.append(types.Part(text=f"File: {f.name}\n```\n{text_content}\n```"))
 
         parts.append(types.Part(text=messages[-1].content))
+        contents.append(types.Content(role="user", parts=parts))
 
         # Retry loop for free-tier rate limits
         for attempt in range(3):
             try:
-                # Use client.aio for native async — no thread wrapper needed
-                chat = await self.client.aio.chats.create(model=model, history=history)
-                async for chunk in await chat.send_message_stream(parts):
+                # Use aio for native async streaming — correct API
+                async for chunk in self.client.aio.models.generate_content_stream(
+                    model=model,
+                    contents=contents,
+                ):
                     if chunk.text:
                         yield chunk.text
                 return

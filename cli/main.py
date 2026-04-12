@@ -1,24 +1,22 @@
 """
 Elio CLI — Main entry point.
-All subcommands and the default `elio` (chat) command live here.
 """
 
 import typer
 import sys
 from typing import Optional
 from rich.console import Console
-from rich.panel import Panel
 
 app = typer.Typer(
     name="elio",
-    help="Unified AI Coding Agent — Claude, Gemini, and ChatGPT in one terminal.",
+    help="Unified AI CLI — Claude, Gemini, and ChatGPT in one terminal.",
     add_completion=False,
     no_args_is_help=False,
 )
 
 console = Console()
 
-VERSION = "0.2.0"
+VERSION = "0.2.5"
 
 
 def version_callback(value: bool):
@@ -31,41 +29,35 @@ def version_callback(value: bool):
 def main(
     ctx: typer.Context,
     version: Optional[bool] = typer.Option(
-        None,
-        "--version",
-        "-v",
+        None, "--version", "-v",
         callback=version_callback,
         is_eager=True,
         help="Show version and exit.",
     ),
     provider: Optional[str] = typer.Option(
-        None,
-        "--provider",
-        "-p",
+        None, "--provider", "-p",
         help="Set AI provider (google, anthropic, openai).",
     ),
     model: Optional[str] = typer.Option(
-        None,
-        "--model",
-        "-m",
-        help="Set model alias (e.g. gemini-2.0-flash, claude-sonnet, gpt-4o).",
+        None, "--model", "-m",
+        help="Set model alias directly (skips selector).",
     ),
 ):
     """
-    Elio — Unified AI Coding Agent. Run without a subcommand to open the chat.
+    Elio — Unified AI CLI.
+
+    Run without a subcommand to open the interactive chat with model selector.
     """
     if ctx.invoked_subcommand is None:
         from cli.chat import run_chat
         run_chat(provider_override=provider, model_override=model)
 
 
-# ──────────────────────────────────────────────
-# Subcommands
-# ──────────────────────────────────────────────
+# ── Subcommands ──────────────────────────────────────────────────────────────
 
 @app.command()
 def login(
-    provider: Optional[str] = typer.Argument(None, help="Provider: anthropic, google, openai")
+    provider: Optional[str] = typer.Argument(None, help="Provider: anthropic, google, openai"),
 ):
     """Add or update API keys for AI providers."""
     from cli.commands import run_login
@@ -109,7 +101,7 @@ def config():
 
 @app.command()
 def update():
-    """Check for and install the latest version of Elio."""
+    """Update Elio to the latest version (via pip — no file downloads)."""
     from cli.commands import run_update
     run_update()
 
