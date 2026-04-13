@@ -1,60 +1,100 @@
 """
 Elio Model Registry — single source of truth for all providers and models.
-
-Organized as Provider → Models hierarchy.
-Users pick a provider first, then a model under that provider.
+Free providers (Groq, Google) come first.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from providers.base import BaseProvider
 
 
 @dataclass
 class ModelEntry:
-    alias: str            # internal key  e.g. "gemini-2.0-flash"
-    display_name: str     # shown to user e.g. "Gemini 2.0 Flash"
-    model_string: str     # sent to API   e.g. "gemini-2.0-flash"
-    provider_name: str    # "anthropic" | "openai" | "google"
-    description: str      # short blurb
-    is_free: bool = False # whether this model is free to use
+    alias:         str   # internal key       e.g. "llama-3.3-70b"
+    display_name:  str   # shown to user       e.g. "Llama 3.3 70B"
+    model_string:  str   # sent to API         e.g. "llama-3.3-70b-versatile"
+    provider_name: str   # "groq" | "google" | "anthropic" | "openai"
+    description:   str   # short blurb
+    is_free:       bool = False
 
 
 @dataclass
 class ProviderInfo:
-    key: str              # "google" | "anthropic" | "openai"
-    name: str             # "Google"
-    brand: str            # "Gemini"
-    has_free: bool        # whether this provider has any free-tier models
+    key:      str    # "groq" | "google" | "anthropic" | "openai"
+    name:     str    # "Groq"
+    brand:    str    # "Llama / Mistral"
+    has_free: bool   # whether free tier exists
+    login_method: str  # "api_key" | "oauth_or_key" | "api_key_paid"
 
 
-# ── Provider metadata ───────────────────────────────────────────────────────
+# ── Provider metadata ────────────────────────────────────────────────────────
 
 PROVIDERS: dict[str, ProviderInfo] = {
+    "groq": ProviderInfo(
+        key="groq", name="Groq", brand="Llama / Mistral / Gemma",
+        has_free=True, login_method="api_key",
+    ),
     "google": ProviderInfo(
-        key="google", name="Google", brand="Gemini", has_free=True,
+        key="google", name="Google", brand="Gemini",
+        has_free=True, login_method="oauth_or_key",
     ),
     "anthropic": ProviderInfo(
-        key="anthropic", name="Anthropic", brand="Claude", has_free=True,
+        key="anthropic", name="Anthropic", brand="Claude",
+        has_free=False, login_method="api_key_paid",
     ),
     "openai": ProviderInfo(
-        key="openai", name="OpenAI", brand="GPT", has_free=True,
+        key="openai", name="OpenAI", brand="GPT",
+        has_free=False, login_method="api_key_paid",
     ),
 }
 
-# ── Provider display order ──────────────────────────────────────────────────
+# Free providers first
+PROVIDER_ORDER = ["groq", "google", "anthropic", "openai"]
 
-PROVIDER_ORDER = ["google", "anthropic", "openai"]
-
-# ── The single source of truth for all model aliases ────────────────────────
+# ── Model registry ───────────────────────────────────────────────────────────
 
 MODEL_REGISTRY: dict[str, ModelEntry] = {
-    # ─── Google (Gemini) ─────────────────────────────────────────────────
+
+    # ─── Groq (FREE — Llama, Mistral, Gemma) ─────────────────────────────
+    "llama-3.3-70b": ModelEntry(
+        alias="llama-3.3-70b",
+        display_name="Llama 3.3 70B",
+        model_string="llama-3.3-70b-versatile",
+        provider_name="groq",
+        description="Best free model — smart & fast",
+        is_free=True,
+    ),
+    "llama-3.1-8b": ModelEntry(
+        alias="llama-3.1-8b",
+        display_name="Llama 3.1 8B",
+        model_string="llama-3.1-8b-instant",
+        provider_name="groq",
+        description="Ultra-fast, lightweight",
+        is_free=True,
+    ),
+    "mixtral-8x7b": ModelEntry(
+        alias="mixtral-8x7b",
+        display_name="Mixtral 8x7B",
+        model_string="mixtral-8x7b-32768",
+        provider_name="groq",
+        description="Great for coding (32k context)",
+        is_free=True,
+    ),
+    "gemma2-9b": ModelEntry(
+        alias="gemma2-9b",
+        display_name="Gemma 2 9B",
+        model_string="gemma2-9b-it",
+        provider_name="groq",
+        description="Google's Gemma 2, fast",
+        is_free=True,
+    ),
+
+    # ─── Google Gemini (FREE tier + Sign in with Google) ─────────────────
     "gemini-2.0-flash": ModelEntry(
         alias="gemini-2.0-flash",
         display_name="Gemini 2.0 Flash",
         model_string="gemini-2.0-flash",
         provider_name="google",
-        description="Fast & free — default",
+        description="Fast & free",
         is_free=True,
     ),
     "gemini-2.0-flash-lite": ModelEntry(
@@ -82,7 +122,7 @@ MODEL_REGISTRY: dict[str, ModelEntry] = {
         is_free=False,
     ),
 
-    # ─── Anthropic (Claude) ──────────────────────────────────────────────
+    # ─── Anthropic Claude (PAID) ──────────────────────────────────────────
     "claude-sonnet": ModelEntry(
         alias="claude-sonnet",
         display_name="Claude Sonnet 4.6",
@@ -100,22 +140,22 @@ MODEL_REGISTRY: dict[str, ModelEntry] = {
         is_free=False,
     ),
 
-    # ─── OpenAI (GPT) ───────────────────────────────────────────────────
+    # ─── OpenAI GPT (PAID) ───────────────────────────────────────────────
     "gpt-4o-mini": ModelEntry(
         alias="gpt-4o-mini",
         display_name="GPT-4o Mini",
         model_string="gpt-4o-mini",
         provider_name="openai",
-        description="Fast & very cheap — free credits",
-        is_free=True,
+        description="Fast, cheap",
+        is_free=False,
     ),
     "gpt-4o": ModelEntry(
         alias="gpt-4o",
         display_name="GPT-4o",
         model_string="gpt-4o",
         provider_name="openai",
-        description="Multi-modal, writing & creativity",
-        is_free=True,
+        description="Multi-modal, writing",
+        is_free=False,
     ),
     "gpt-4.1": ModelEntry(
         alias="gpt-4.1",
@@ -133,50 +173,31 @@ MODEL_REGISTRY: dict[str, ModelEntry] = {
         description="Fast latest-gen",
         is_free=False,
     ),
-    "gpt-4.1-nano": ModelEntry(
-        alias="gpt-4.1-nano",
-        display_name="GPT-4.1 Nano",
-        model_string="gpt-4.1-nano",
-        provider_name="openai",
-        description="Ultra-fast, cheapest",
-        is_free=True,
-    ),
 }
 
-# ── Models grouped by provider (display order) ─────────────────────────────
+# ── Models grouped by provider ───────────────────────────────────────────────
 
 PROVIDER_MODELS: dict[str, list[str]] = {
-    "google": [
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-lite",
-        "gemini-2.5-flash",
-        "gemini-2.5-pro",
-    ],
-    "anthropic": [
-        "claude-sonnet",
-        "claude-haiku",
-    ],
-    "openai": [
-        "gpt-4o-mini",
-        "gpt-4o",
-        "gpt-4.1",
-        "gpt-4.1-mini",
-        "gpt-4.1-nano",
-    ],
+    "groq":      ["llama-3.3-70b", "llama-3.1-8b", "mixtral-8x7b", "gemma2-9b"],
+    "google":    ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-2.5-flash", "gemini-2.5-pro"],
+    "anthropic": ["claude-sonnet", "claude-haiku"],
+    "openai":    ["gpt-4o-mini", "gpt-4o", "gpt-4.1", "gpt-4.1-mini"],
 }
 
 
 def resolve_model(alias: str) -> ModelEntry:
-    """Look up an alias. Raises KeyError with helpful message if not found."""
     if alias not in MODEL_REGISTRY:
         valid = ", ".join(MODEL_REGISTRY.keys())
-        raise KeyError(f"Unknown model '{alias}'. Valid aliases: {valid}")
+        raise KeyError(f"Unknown model '{alias}'. Valid: {valid}")
     return MODEL_REGISTRY[alias]
 
 
 def get_provider(alias: str) -> BaseProvider:
-    """Resolve alias → instantiate the correct provider class."""
     entry = resolve_model(alias)
+
+    if entry.provider_name == "groq":
+        from providers.groq_provider import GroqProvider
+        return GroqProvider()
 
     if entry.provider_name == "anthropic":
         from providers.claude import ClaudeProvider
@@ -194,14 +215,12 @@ def get_provider(alias: str) -> BaseProvider:
 
 
 def get_models_for_provider(provider_key: str) -> list[ModelEntry]:
-    """Return all ModelEntry objects for a given provider, in display order."""
     aliases = PROVIDER_MODELS.get(provider_key, [])
     return [MODEL_REGISTRY[a] for a in aliases]
 
 
 def get_default_model_for_provider(provider_key: str) -> ModelEntry:
-    """Return the first (default) model for a provider."""
     aliases = PROVIDER_MODELS.get(provider_key, [])
     if not aliases:
-        raise ValueError(f"No models registered for provider '{provider_key}'")
+        raise ValueError(f"No models for provider '{provider_key}'")
     return MODEL_REGISTRY[aliases[0]]
