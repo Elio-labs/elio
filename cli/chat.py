@@ -373,9 +373,7 @@ async def _chat_loop(
     while True:
         try:
             prompt = make_prompt_text(current_provider, current_alias)
-            text = await asyncio.get_event_loop().run_in_executor(
-                None, lambda: session.prompt(prompt, style=PT_STYLE),
-            )
+            text = await session.prompt_async(prompt, style=PT_STYLE)
             text = text.strip()
             if not text:
                 continue

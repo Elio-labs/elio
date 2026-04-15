@@ -31,10 +31,13 @@ class GroqProvider(BaseProvider):
 
     async def list_models(self) -> list[ModelInfo]:
         return [
-            ModelInfo("llama-3.3-70b",  "llama-3.3-70b-versatile", "groq", "Best free model — fast & smart"),
-            ModelInfo("llama-3.1-8b",   "llama-3.1-8b-instant",    "groq", "Ultra-fast, lightweight"),
-            ModelInfo("mixtral-8x7b",   "mixtral-8x7b-32768",      "groq", "Great for coding"),
-            ModelInfo("gemma2-9b",      "gemma2-9b-it",            "groq", "Google's Gemma 2"),
+            # Still active and highly reliable
+            ModelInfo("llama-3.3-70b", "llama-3.3-70b-versatile", "groq", "Best free model — fast & smart"),
+            
+            # Fresh additions currently active on Groq
+            ModelInfo("gpt-oss-120b",  "openai/gpt-oss-120b",     "groq", "OpenAI's flagship open-weight"),
+            ModelInfo("qwen3-32b",     "qwen/qwen3-32b",          "groq", "Excellent reasoning & speed"),
+            ModelInfo("llama-4-scout", "meta-llama/llama-4-scout-17b-16e-instruct", "groq", "Latest Llama 4 preview"),
         ]
 
     async def stream_chat(
@@ -70,6 +73,7 @@ class GroqProvider(BaseProvider):
         )
 
         async for chunk in stream:
-            delta = chunk.choices[0].delta.content
-            if delta:
-                yield delta
+            if chunk.choices and len(chunk.choices) > 0:
+                delta = chunk.choices[0].delta.content
+                if delta:
+                    yield delta

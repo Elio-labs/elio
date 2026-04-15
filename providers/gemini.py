@@ -39,17 +39,18 @@ class GeminiProvider(BaseProvider):
         return get_api_key("google") is not None or is_google_oauth_logged_in()
 
     async def list_models(self) -> list[ModelInfo]:
+        # Updated to the latest Gemini 3 and 3.1 API model strings
         return [
-            ModelInfo("gemini-2.0-flash",     "gemini-2.0-flash",               "google", "Fast & free"),
-            ModelInfo("gemini-2.0-flash-lite", "gemini-2.0-flash-lite",         "google", "Ultra-fast"),
-            ModelInfo("gemini-2.5-flash",      "gemini-2.5-flash-preview-04-17","google", "Latest flash"),
-            ModelInfo("gemini-2.5-pro",        "gemini-2.5-pro-preview-05-06",  "google", "Most capable"),
+            ModelInfo("gemini-3-flash",        "gemini-3-flash",         "google", "Fast & free"),
+            ModelInfo("gemini-3.1-flash-lite", "gemini-3.1-flash-lite",  "google", "Ultra-fast"),
+            ModelInfo("gemini-3.1-deep-think", "gemini-3.1-deep-think",  "google", "Deep reasoning"),
+            ModelInfo("gemini-3.1-pro",        "gemini-3.1-pro-preview", "google", "Most capable (Web matching)"),
         ]
 
     async def stream_chat(
         self,
         messages: list[Message],
-        model: str = "gemini-2.0-flash",
+        model: str = "gemini-3.1-pro-preview",  # Defaulting to 3.1 Pro
         files: list[FileAttachment] | None = None,
     ) -> AsyncIterator[str]:
         contents = []
@@ -85,9 +86,11 @@ class GeminiProvider(BaseProvider):
                 return
             except Exception as e:
                 err = str(e).lower()
-                if "429" in err or "rate" in err or "quota" in err:
+                if ("429" in err or "rate" in err) and attempt < 2:
                     wait = 15 * (attempt + 1)
                     yield f"\n⚠️  Rate limit — retrying in {wait}s...\n"
                     await asyncio.sleep(wait)
                 else:
-                    raise
+                    # Provide an exact error back to the user
+                    yield f"\n[red]API Error:[/red] {str(e)}\n"
+                    return
