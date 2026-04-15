@@ -57,8 +57,11 @@ class GeminiProvider(BaseProvider):
         for msg in messages[:-1]:
             role = "user" if msg.role == "user" else "model"
             contents.append(
-                # Pass text directly as a string part instead of using types.Part(text=...)
-                types.Content(role=role, parts=[msg.content])
+                types.Content(
+                    role=role, 
+                    # FIX: Wrap the string in types.Part.from_text()
+                    parts=[types.Part.from_text(text=msg.content)]
+                )
             )
 
         # 2. Build the final User Message
@@ -66,16 +69,20 @@ class GeminiProvider(BaseProvider):
         if files:
             for f in files:
                 if f.mime_type.startswith("image/"):
-                    # Safely load image bytes using the new SDK method
                     parts.append(
                         types.Part.from_bytes(data=f.data, mime_type=f.mime_type)
                     )
                 else:
                     text_content = f.data.decode("utf-8", errors="replace")
-                    parts.append(f"File: {f.name}\n```\n{text_content}\n```")
+                    # FIX: Wrap file text in types.Part.from_text()
+                    parts.append(
+                        types.Part.from_text(text=f"File: {f.name}\n```\n{text_content}\n```")
+                    )
 
         # Append the user's text prompt
-        parts.append(messages[-1].content)
+        # FIX: Wrap user text prompt in types.Part.from_text()
+        parts.append(types.Part.from_text(text=messages[-1].content))
+        
         contents.append(types.Content(role="user", parts=parts))
 
         # 3. Stream the response
@@ -90,10 +97,9 @@ class GeminiProvider(BaseProvider):
                 return
             except Exception as e:
                 err = str(e).lower()
-                # Properly catch and retry 429 Rate Limits
                 if ("429" in err or "rate" in err) and attempt < 2:
                     wait = 15 * (attempt + 1)
-                    yield f"\n⚠️ Rate limit — retrying in {wait}s...\n"
+                    yield f"\n⚠️  Rate limit — retrying in {wait}s...\n"
                     import asyncio
                     await asyncio.sleep(wait)
                 else:

@@ -30,13 +30,11 @@ class GroqProvider(BaseProvider):
         return get_api_key("groq") is not None
 
     async def list_models(self) -> list[ModelInfo]:
-        return [
-            # Still active and highly reliable
-            ModelInfo("llama-3.3-70b", "llama-3.3-70b-versatile", "groq", "Best free model — fast & smart"),
-            
-            # Fresh additions currently active on Groq
-            ModelInfo("gpt-oss-120b",  "openai/gpt-oss-120b",     "groq", "OpenAI's flagship open-weight"),
-        ]
+            return [
+                # Valid Groq models
+                ModelInfo("llama-3.3-70b", "llama-3.3-70b-versatile", "groq", "Best free model — fast & smart"),
+                ModelInfo("llama-3.1-8b", "llama-3.1-8b-instant", "groq", "Ultra-fast, lightweight"),
+            ]
 
     async def stream_chat(
         self,

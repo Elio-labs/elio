@@ -30,7 +30,7 @@ class ProviderInfo:
 
 PROVIDERS: dict[str, ProviderInfo] = {
     "groq": ProviderInfo(
-        key="groq", name="Groq", brand="Llama / Mistral / Gemma",
+        key="groq", name="Groq", brand="Llama / Mistral / Gemma", # Fixed brand string
         has_free=True, login_method="api_key",
     ),
     "google": ProviderInfo(
@@ -54,7 +54,7 @@ PROVIDER_ORDER = ["groq", "google", "anthropic", "openai"]
 
 MODEL_REGISTRY: dict[str, ModelEntry] = {
 
-    # ─── Groq (FREE — Llama, Mistral, Gemma) ─────────────────────────────
+# ─── Groq (FREE — Llama, Mistral, Gemma) ─────────────────────────────
     "llama-3.3-70b": ModelEntry(
         alias="llama-3.3-70b",
         display_name="Llama 3.3 70B",
@@ -63,10 +63,10 @@ MODEL_REGISTRY: dict[str, ModelEntry] = {
         description="Best free model — smart & fast",
         is_free=True,
     ),
-    "gpt-oss-120b": ModelEntry(
-        alias="gpt-oss-120b",
-        display_name="gpt-oss-120b",
-        model_string="gpt-oss-120b-instant",
+    "llama-3.1-8b": ModelEntry(
+        alias="llama-3.1-8b",
+        display_name="Llama 3.1 8B",
+        model_string="llama-3.1-8b-instant", # The exact valid string Groq expects
         provider_name="groq",
         description="Ultra-fast, lightweight",
         is_free=True,
@@ -154,7 +154,7 @@ MODEL_REGISTRY: dict[str, ModelEntry] = {
 # ── Models grouped by provider ───────────────────────────────────────────────
 
 PROVIDER_MODELS: dict[str, list[str]] = {
-    "groq":      ["llama-3.3-70b", "gpt-oss-120b"],
+    "groq":      ["llama-3.3-70b", "llama-3.1-8b"], 
     "google":    ["gemini-fast", "gemini-thinking", "gemini-pro"],
     "anthropic": ["claude-sonnet", "claude-haiku"],
     "openai":    ["gpt-4o-mini", "gpt-4o", "gpt-4.1", "gpt-4.1-mini"],
