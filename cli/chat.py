@@ -95,7 +95,7 @@ def select_ai() -> tuple[str, str] | None:
     'Select your AI' startup screen.
     Returns (provider_key, model_alias) or None if cancelled.
     """
-    console.print(Rule("[bold #6c71c4]  🤖  SELECT YOUR AI  [/bold #6c71c4]", style="#6c71c4"))
+    console.print(Rule("[bold #6c71c4]  SELECT YOUR AI  [/bold #6c71c4]", style="#6c71c4"))
     console.print()
 
     # Provider table
@@ -359,9 +359,9 @@ def run_chat(
             config=config,
         ))
     except KeyboardInterrupt:
-        console.print("\n[dim]Goodbye! 👋[/dim]")
+        console.print("\n[dim]Goodbye! [/dim]")
     except EOFError:
-        console.print("\n[dim]Goodbye! 👋[/dim]")
+        console.print("\n[dim]Goodbye! [/dim]")
 
 
 async def _chat_loop(
@@ -400,7 +400,7 @@ async def _chat_loop(
                     history.clear()
                     attached_files.clear()
                 if result.should_exit:
-                    console.print("[dim]Goodbye! 👋[/dim]")
+                    console.print("[dim]Goodbye![/dim]")
                     return
                 continue
 
@@ -417,7 +417,7 @@ async def _chat_loop(
             console.print()
             continue
         except EOFError:
-            console.print("\n[dim]Goodbye! 👋[/dim]")
+            console.print("\n[dim]Goodbye![/dim]")
             return
 
 

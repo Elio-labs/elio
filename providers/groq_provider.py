@@ -36,8 +36,6 @@ class GroqProvider(BaseProvider):
             
             # Fresh additions currently active on Groq
             ModelInfo("gpt-oss-120b",  "openai/gpt-oss-120b",     "groq", "OpenAI's flagship open-weight"),
-            ModelInfo("qwen3-32b",     "qwen/qwen3-32b",          "groq", "Excellent reasoning & speed"),
-            ModelInfo("llama-4-scout", "meta-llama/llama-4-scout-17b-16e-instruct", "groq", "Latest Llama 4 preview"),
         ]
 
     async def stream_chat(

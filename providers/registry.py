@@ -63,62 +63,38 @@ MODEL_REGISTRY: dict[str, ModelEntry] = {
         description="Best free model — smart & fast",
         is_free=True,
     ),
-    "llama-3.1-8b": ModelEntry(
-        alias="llama-3.1-8b",
-        display_name="Llama 3.1 8B",
-        model_string="llama-3.1-8b-instant",
+    "gpt-oss-120b": ModelEntry(
+        alias="gpt-oss-120b",
+        display_name="gpt-oss-120b",
+        model_string="gpt-oss-120b-instant",
         provider_name="groq",
         description="Ultra-fast, lightweight",
-        is_free=True,
-    ),
-    "mixtral-8x7b": ModelEntry(
-        alias="mixtral-8x7b",
-        display_name="Mixtral 8x7B",
-        model_string="mixtral-8x7b-32768",
-        provider_name="groq",
-        description="Great for coding (32k context)",
-        is_free=True,
-    ),
-    "gemma2-9b": ModelEntry(
-        alias="gemma2-9b",
-        display_name="Gemma 2 9B",
-        model_string="gemma2-9b-it",
-        provider_name="groq",
-        description="Google's Gemma 2, fast",
         is_free=True,
     ),
 
-    # ─── Google Gemini (FREE tier + Sign in with Google) ─────────────────
-    "gemini-2.0-flash": ModelEntry(
-        alias="gemini-2.0-flash",
-        display_name="Gemini 2.0 Flash",
-        model_string="gemini-2.0-flash",
+# ─── Google Gemini (FREE tier + Sign in with Google) ─────────────────
+    "gemini-fast": ModelEntry(
+        alias="gemini-fast",
+        display_name="Gemini Fast",
+        model_string="gemini-2.5-flash", # or gemini-2.0-flash
         provider_name="google",
-        description="Fast & free",
+        description="Fast, general tasks",
         is_free=True,
     ),
-    "gemini-2.0-flash-lite": ModelEntry(
-        alias="gemini-2.0-flash-lite",
-        display_name="Gemini 2.0 Flash Lite",
-        model_string="gemini-2.0-flash-lite",
+    "gemini-thinking": ModelEntry(
+        alias="gemini-thinking",
+        display_name="Gemini Thinking",
+        model_string="gemini-2.0-flash-thinking-exp-01-21",
         provider_name="google",
-        description="Ultra-fast, lightweight",
+        description="Deep reasoning & logic",
         is_free=True,
     ),
-    "gemini-2.5-flash": ModelEntry(
-        alias="gemini-2.5-flash",
-        display_name="Gemini 2.5 Flash",
-        model_string="gemini-2.5-flash-preview-04-17",
+    "gemini-pro": ModelEntry(
+        alias="gemini-pro",
+        display_name="Gemini 3.1 Pro",
+        model_string="gemini-3.1-pro", # Update to preview if needed
         provider_name="google",
-        description="Latest flash with thinking",
-        is_free=True,
-    ),
-    "gemini-2.5-pro": ModelEntry(
-        alias="gemini-2.5-pro",
-        display_name="Gemini 2.5 Pro",
-        model_string="gemini-2.5-pro-preview-05-06",
-        provider_name="google",
-        description="Best reasoning & research",
+        description="Most capable (Web grounded)",
         is_free=False,
     ),
 
@@ -178,8 +154,8 @@ MODEL_REGISTRY: dict[str, ModelEntry] = {
 # ── Models grouped by provider ───────────────────────────────────────────────
 
 PROVIDER_MODELS: dict[str, list[str]] = {
-    "groq":      ["llama-3.3-70b", "llama-3.1-8b", "mixtral-8x7b", "gemma2-9b"],
-    "google":    ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-2.5-flash", "gemini-2.5-pro"],
+    "groq":      ["llama-3.3-70b", "gpt-oss-120b"],
+    "google":    ["gemini-fast", "gemini-thinking", "gemini-pro"],
     "anthropic": ["claude-sonnet", "claude-haiku"],
     "openai":    ["gpt-4o-mini", "gpt-4o", "gpt-4.1", "gpt-4.1-mini"],
 }
