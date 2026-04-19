@@ -9,7 +9,7 @@ from rich.console import Console
 
 app = typer.Typer(
     name="elio",
-    help="Unified AI CLI — Claude, Gemini, and ChatGPT in one terminal.",
+    help="Unified AI CLI — Claude, Gemini, ChatGPT, Groq in one terminal.",
     add_completion=False,
     no_args_is_help=False,
 )
@@ -36,7 +36,7 @@ def main(
     ),
     provider: Optional[str] = typer.Option(
         None, "--provider", "-p",
-        help="Set AI provider (google, anthropic, openai).",
+        help="Set AI provider (google, anthropic, openai, groq).",
     ),
     model: Optional[str] = typer.Option(
         None, "--model", "-m",
@@ -57,7 +57,7 @@ def main(
 
 @app.command()
 def login(
-    provider: Optional[str] = typer.Argument(None, help="Provider: anthropic, google, openai"),
+    provider: Optional[str] = typer.Argument(None, help="Provider: groq, anthropic, google, openai"),
 ):
     """Add or update API keys for AI providers."""
     from cli.commands import run_login

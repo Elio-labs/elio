@@ -107,8 +107,8 @@ def select_ai() -> tuple[str, str] | None:
     table.add_column("",                                width=3,  no_wrap=True)
 
     brand_models = {
-        "groq":      "Llama 3.3, Mixtral, Gemma2",
-        "google":    "Gemini 2.0/2.5",
+        "groq":      "Llama 3.3, llama-3.1",
+        "google":    "Gemini Fast / Thinking / Pro",
         "anthropic": "Claude Sonnet / Haiku",
         "openai":    "GPT-4o, GPT-4.1",
     }
