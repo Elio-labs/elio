@@ -22,7 +22,7 @@ from auth.manager import (
 
 console = Console()
 
-CURRENT_VERSION = "0.2.5"
+CURRENT_VERSION = "0.2.6"
 GITHUB_API = "https://api.github.com/repos/Elio-labs/elio/releases/latest"
 
 

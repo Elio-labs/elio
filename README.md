@@ -186,5 +186,5 @@ MIT
 
 -----
 
-v0.2.5
+v0.2.6
 <!-- | [Issues](https://github.com/Elio-labs/elio/issues)  [Contributing](./CONTRIBUTING.md) -->

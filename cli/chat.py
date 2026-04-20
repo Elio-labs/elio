@@ -35,7 +35,7 @@ from auth.manager import get_api_key, is_provider_ready
 from utils.error import friendly_error
 
 console = Console()
-VERSION = "0.2.5"
+VERSION = "0.2.6"
 
 PT_STYLE = PTStyle.from_dict({
     "prompt": "#6c71c4 bold",
