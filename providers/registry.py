@@ -72,30 +72,30 @@ MODEL_REGISTRY: dict[str, ModelEntry] = {
         is_free=True,
     ),
 
-# ─── Google Gemini (FREE tier + Sign in with Google) ─────────────────
+# ─── Google Gemini 3 (FREE via AI Studio) — matches website lineup ───
     "gemini-fast": ModelEntry(
         alias="gemini-fast",
-        display_name="Gemini Fast",
-        model_string="gemini-2.5-flash", # or gemini-2.0-flash
+        display_name="Gemini 3 Fast",
+        model_string="gemini-3-flash-preview",
         provider_name="google",
-        description="Fast, general tasks",
+        description="Answers quickly",
         is_free=True,
     ),
     "gemini-thinking": ModelEntry(
         alias="gemini-thinking",
-        display_name="Gemini Thinking",
-        model_string="gemini-2.0-flash-thinking-exp-01-21",
+        display_name="Gemini 3 Thinking",
+        model_string="gemini-3.1-pro-preview",
         provider_name="google",
-        description="Deep reasoning & logic",
+        description="Solves complex problems",
         is_free=True,
     ),
     "gemini-pro": ModelEntry(
         alias="gemini-pro",
         display_name="Gemini 3.1 Pro",
-        model_string="gemini-3.1-pro", # Update to preview if needed
+        model_string="gemini-3.1-pro-preview",
         provider_name="google",
-        description="Most capable (Web grounded)",
-        is_free=False,
+        description="Advanced math and code with 3.1 Pro",
+        is_free=True,
     ),
 
     # ─── Anthropic Claude (PAID) ──────────────────────────────────────────

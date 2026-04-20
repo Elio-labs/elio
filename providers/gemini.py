@@ -38,9 +38,9 @@ class GeminiProvider(BaseProvider):
 
     async def list_models(self) -> list[ModelInfo]:
         return [
-            ModelInfo("gemini-fast",     "gemini-2.5-flash",       "google", "Fast & free"),
-            ModelInfo("gemini-thinking", "gemini-3.1-pro-preview",  "google", "Deep reasoning (thinking built-in)"),
-            ModelInfo("gemini-pro",      "gemini-3.1-pro-preview",  "google", "Most capable"),  # FIX: was gemini-3.1-pro → needs -preview suffix
+            ModelInfo("gemini-fast",     "gemini-3-flash-preview",   "google", "Answers quickly"),
+            ModelInfo("gemini-thinking", "gemini-3.1-pro-preview",   "google", "Solves complex problems"),
+            ModelInfo("gemini-pro",      "gemini-3.1-pro-preview",   "google", "Advanced math and code with 3.1 Pro"),
         ]
 
     async def stream_chat(
@@ -75,13 +75,13 @@ class GeminiProvider(BaseProvider):
         parts.append(types.Part.from_text(text=messages[-1].content))
         contents.append(types.Content(role="user", parts=parts))
 
-        # 3. For gemini-thinking, explicitly request high thinking level.
-        #    gemini-3.1-pro-preview already defaults to high, but being
-        #    explicit makes intent clear and guards against future default changes.
+        # 3. Configure thinking based on model alias.
+        #    gemini-3.1-pro-preview has native thinking — no extra config needed.
+        #    gemini-3-flash-preview (fast) gets thinking_budget=0 for max speed.
         generate_config = None
-        if alias == "gemini-thinking":
+        if alias == "gemini-fast":
             generate_config = types.GenerateContentConfig(
-                thinking_config=types.ThinkingConfig(thinking_level="HIGH")
+                thinking_config=types.ThinkingConfig(thinking_budget=0)
             )
 
         # 4. Stream the response
