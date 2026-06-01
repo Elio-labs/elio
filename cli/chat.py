@@ -436,18 +436,30 @@ async def _send_message(
     try:
         provider      = get_provider(current_alias)
         full_response = ""
+        had_error     = False
 
         async for token in provider.stream_chat(
             messages=history,
             model=entry.model_string,
             files=attached_files or None,
+            alias=current_alias,          # ← needed for thinking config, retry logic
         ):
-            console.print(token, end="", highlight=False)
-            full_response += token
+            # Tokens starting with \n[red] are inline errors from the provider
+            # (e.g. rate limit exhausted) — print them but don't save to history
+            if token.startswith("\n[red]") or token.startswith("\n⚠️"):
+                console.print(token, end="", highlight=False)
+                had_error = True
+            else:
+                console.print(token, end="", highlight=False)
+                if not had_error:
+                    full_response += token
 
         console.print("\n")
-        history.append(Message(role="assistant", content=full_response))
-        session_manager.save_turn("assistant", full_response)
+
+        if full_response.strip():
+            history.append(Message(role="assistant", content=full_response))
+            session_manager.save_turn("assistant", full_response)
+
         attached_files.clear()
 
     except Exception as e:
